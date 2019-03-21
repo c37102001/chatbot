@@ -6,7 +6,7 @@ import pdb
 
 class BasePredictor():
     def __init__(self, batch_size=10, max_epochs=10, valid=None, device=None, metrics={},
-                 learning_rate=5e-3, max_iters_in_epoch=1e20, grad_accumulate_steps=1):
+                 learning_rate=1e-2, max_iters_in_epoch=1e20, grad_accumulate_steps=1):
         self.batch_size = batch_size
         self.max_epochs = max_epochs
         self.valid = valid
