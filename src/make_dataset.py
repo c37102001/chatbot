@@ -21,14 +21,11 @@ def main(args):
     # collect words appear in the data
     words = set()
     logging.info('collecting words from {}'.format(config['valid_json_path']))
-    words |= preprocessor.collect_words(config['test_json_path'],
-                                        n_workers=args.n_workers)
+    words |= preprocessor.collect_words(config['test_json_path'], n_workers=args.n_workers)
     logging.info('collecting words from {}'.format(config['train_json_path']))
-    words |= preprocessor.collect_words(config['train_json_path'],
-                                        n_workers=args.n_workers)
+    words |= preprocessor.collect_words(config['train_json_path'], n_workers=args.n_workers)
     logging.info('collecting words from {}'.format(config['test_json_path']))
-    words |= preprocessor.collect_words(config['valid_json_path'],
-                                        n_workers=args.n_workers)
+    words |= preprocessor.collect_words(config['valid_json_path'], n_workers=args.n_workers)
 
     # load embedding only for words in the data
     logging.info(
@@ -49,6 +46,7 @@ def main(args):
         config['valid_json_path'], args.n_workers,
         {'n_positive': -1, 'n_negative': -1, 'shuffle': False}
     )
+
     valid_pkl_path = os.path.join(args.dest_dir, 'valid.pkl')
     logging.info('Saving valid to {}'.format(valid_pkl_path))
     with open(valid_pkl_path, 'wb') as f:
@@ -56,8 +54,8 @@ def main(args):
 
     # train
     logging.info('Processing train from {}'.format(config['train_json_path']))
-    train = preprocessor.get_dataset(config['train_json_path'], args.n_workers)
-    train_pkl_path = os.path.join(args.dest_dir, 'train.pkl')
+    train = preprocessor.get_dataset(config['train_json_path'], args.n_workers)  #load json data
+    train_pkl_path = os.path.join(args.dest_dir, 'train.pkl')                     #save into pkl
     logging.info('Saving train to {}'.format(train_pkl_path))
     with open(train_pkl_path, 'wb') as f:
         pickle.dump(train, f)
@@ -75,11 +73,9 @@ def main(args):
 
 
 def _parse_args():
-    parser = argparse.ArgumentParser(
-        description="Preprocess and generate preprocessed pickle.")
-    parser.add_argument('dest_dir', type=str,
-                        help='[input] Path to the directory that .')
-    parser.add_argument('--n_workers', type=int, default=4)
+    parser = argparse.ArgumentParser(description="Preprocess and generate preprocessed pickle.")
+    parser.add_argument('dest_dir', type=str, help='[input] Path to the directory that .')
+    parser.add_argument('--n_workers', type=int, default=10)
     args = parser.parse_args()
     return args
 

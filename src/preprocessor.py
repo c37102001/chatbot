@@ -1,5 +1,6 @@
 import json
 import logging
+import nltk
 from multiprocessing import Pool
 from dataset import DialogDataset
 from tqdm import tqdm
@@ -23,7 +24,8 @@ class Preprocessor:
             indices (list of str): List of tokens in a sentence.
         """
         # TODO
-        pass
+        return nltk.word_tokenize(sentence)
+
 
     def sentence_to_indices(self, sentence):
         """ Convert sentence to its word indices.
@@ -32,9 +34,11 @@ class Preprocessor:
         Return:
             indices (list of int): List of word indices.
         """
+
         # TODO
         # Hint: You can use `self.embedding`
-        pass
+        tokens = nltk.word_tokenize(sentence)
+        return [self.embedding.to_index(token) for token in tokens]
 
     def collect_words(self, data_path, n_workers=4):
         with open(data_path) as f:
@@ -43,10 +47,8 @@ class Preprocessor:
         utterances = []
         for sample in data:
             utterances += (
-                [message['utterance']
-                 for message in sample['messages-so-far']]
-                + [option['utterance']
-                   for option in sample['options-for-next']]
+                [message['utterance'] for message in sample['messages-so-far']] +
+                [option['utterance'] for option in sample['options-for-next']]
             )
         utterances = list(set(utterances))
         chunks = [
@@ -85,7 +87,7 @@ class Preprocessor:
                 results[i] = pool.apply_async(self.preprocess_samples, [batch])
 
                 # When debugging, you'd better not use multi-thread.
-                # results[i] = self.preprocess_dataset(batch, preprocess_args)
+                #results[i] = self.preprocess_samples(batch)
 
             pool.close()
             pool.join()
@@ -126,7 +128,8 @@ class Preprocessor:
         processed['speaker'] = []
         for message in data['messages-so-far']:
             processed['context'].append(
-                self.sentence_to_indices(message['utterance'].lower())
+                self.sentence_to_indices(message['utterance'].lower() + ' ' +
+                                         message['speaker'])
             )
 
         # process options
@@ -138,7 +141,7 @@ class Preprocessor:
             processed['n_corrects'] = len(data['options-for-correct-answers'])
             for option in data['options-for-correct-answers']:
                 processed['options'].append(
-                    self.sentence_to_indices(option['utterance'].lower())
+                    self.sentence_to_indices(option['utterance'].lower() + ' participant_2')
                 )
                 processed['option_ids'].append(option['candidate-id'])
         else:
@@ -150,7 +153,7 @@ class Preprocessor:
                 continue
 
             processed['options'].append(
-                self.sentence_to_indices(option['utterance'].lower())
+                self.sentence_to_indices(option['utterance'].lower() + ' participant_2')
             )
             processed['option_ids'].append(option['candidate-id'])
 

@@ -45,6 +45,12 @@ class Recall(Metrics):
         # - increase self.n_corrects based on the prediction and labels
         #   of the batch.
 
+        self.n += len(batch['labels'])
+
+        for predict in predicts:
+            if torch.sort(predict, descending=True)[1].tolist().index(0) < self.at:
+                self.n_corrects += 1
+
     def get_score(self):
         return self.n_corrects / self.n
 

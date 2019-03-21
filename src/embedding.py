@@ -17,8 +17,7 @@ class Embedding:
         rand_seed (int): Random seed for embedding initialization.
     """
 
-    def __init__(self, embedding_path,
-                 words=None, oov_as_unk=True, lower=True, rand_seed=524):
+    def __init__(self, embedding_path, words=None, oov_as_unk=True, lower=True, rand_seed=524):
         self.word_dict = {}
         self.vectors = None
         self.lower = lower
@@ -31,6 +30,12 @@ class Embedding:
             )
         if '<unk>' not in self.word_dict:
             self.add('<unk>')
+
+        if 'participant_1' not in self.word_dict:
+            self.add('participant_1')
+
+        if 'participant_2' not in self.word_dict:
+            self.add('participant_2')
 
     def to_index(self, word):
         """
@@ -79,8 +84,7 @@ class Embedding:
                     self.word_dict[word] = len(self.word_dict)
 
             oov_vectors = torch.nn.init.uniform_(
-                torch.empty(len(self.word_dict) - self.vectors.shape[0],
-                            self.vectors.shape[1]))
+                torch.empty(len(self.word_dict) - self.vectors.shape[0], self.vectors.shape[1]))
 
             self.vectors = torch.cat([self.vectors, oov_vectors], 0)
 

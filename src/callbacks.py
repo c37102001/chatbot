@@ -28,10 +28,7 @@ class MetricsLogger(Callback):
 
 
 class ModelCheckpoint(Callback):
-    def __init__(self, filepath,
-                 monitor='loss',
-                 verbose=0,
-                 mode='min'):
+    def __init__(self, filepath, monitor='loss', verbose=0, mode='min'):
         self._filepath = filepath
         self._verbose = verbose
         self._monitor = monitor

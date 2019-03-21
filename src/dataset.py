@@ -15,8 +15,7 @@ class DialogDataset(Dataset):
         shuffle (bool): Do not shuffle options when sampling.
             **SHOULD BE FALSE WHEN TESTING**
     """
-    def __init__(self, data, padding=0,
-                 n_negative=4, n_positive=1,
+    def __init__(self, data, padding=0, n_negative=4, n_positive=1,
                  context_padded_len=300, option_padded_len=50, shuffle=True):
         self.data = data
         self.n_positive = n_positive
@@ -31,24 +30,24 @@ class DialogDataset(Dataset):
 
     def __getitem__(self, index):
         data = dict(self.data[index])
-        positives = data['options'][:data['n_corrects']]
-        negatives = data['options'][data['n_corrects']:]
+        positives = data['options'][:data['n_corrects']]   # 1
+        negatives = data['options'][data['n_corrects']:]   # 99
         positive_ids = data['option_ids'][:data['n_corrects']]
         negative_ids = data['option_ids'][data['n_corrects']:]
 
         if self.n_positive == -1:
-            n_positive = len(positives)
+            n_positive = len(positives)  # 1
         if self.n_negative == -1:
-            n_negative = len(negatives)
+            n_negative = len(negatives)  # 99
         else:
             n_positive = min(len(positives), self.n_positive)
             n_negative = min(len(negatives), self.n_negative)
 
         # TODO: sample positive indices
-        positive_indices = [0]
+        positive_indices = [i for i in range(n_positive)]
 
         # TODO: sample negative indices
-        negative_indices = [1, 2, 3, 4]
+        negative_indices = [i for i in range(n_negative)]  # [0~98]
 
         # collect sampled options
         data['options'] = (
@@ -62,7 +61,12 @@ class DialogDataset(Dataset):
         data['labels'] = [1] * n_positive + [0] * n_negative
 
         # use the last one utterance
-        data['context'] = data['context'][-1]
+        # data['context'] = data['context'][-1]
+        concat_context = []
+        for context in data['context']:
+            concat_context += context
+        data['context'] = concat_context
+
         if len(data['context']) > self.context_padded_len:
             data['context'] = data['context'][:self.context_padded_len]
 
@@ -115,4 +119,8 @@ def pad_to_len(arr, padded_len, padding=0):
         padding (int): Integer used to pad.
     """
     # TODO
-    return []
+    if len(arr) >= padded_len:
+        return arr[0:padded_len]
+    else:
+        pad_arr = [padding for _ in range(padded_len-len(arr))]
+        return arr + pad_arr

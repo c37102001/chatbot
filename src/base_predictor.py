@@ -1,19 +1,12 @@
 import torch
-import torch.utils.data.dataloader
-from torch.utils.data.dataloader import default_collate
+import torch.utils.data as Data
 from tqdm import tqdm
+import pdb
 
 
 class BasePredictor():
-    def __init__(self,
-                 batch_size=10,
-                 max_epochs=10,
-                 valid=None,
-                 device=None,
-                 metrics={},
-                 learning_rate=1e-3,
-                 max_iters_in_epoch=1e20,
-                 grad_accumulate_steps=1):
+    def __init__(self, batch_size=10, max_epochs=10, valid=None, device=None, metrics={},
+                 learning_rate=5e-3, max_iters_in_epoch=1e20, grad_accumulate_steps=1):
         self.batch_size = batch_size
         self.max_epochs = max_epochs
         self.valid = valid
@@ -25,12 +18,11 @@ class BasePredictor():
         if device is not None:
             self.device = torch.device(device)
         else:
-            self.device = torch.device('cuda:0' if torch.cuda.is_available()
-                                       else 'cpu')
+            self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
         self.epoch = 0
 
-    def fit_dataset(self, data, collate_fn=default_collate, callbacks=[]):
+    def fit_dataset(self, data, collate_fn, callbacks=[]):
         # Start the training loop.
         while self.epoch < self.max_epochs:
 
@@ -39,7 +31,12 @@ class BasePredictor():
             # TODO: create dataloader for `train`.
             # You can set batch_size as `self.batch_size` here,
             # and `collate_fn=collate_fn`.
-            dataloader = None
+            dataloader = Data.DataLoader(
+                dataset=data,
+                batch_size=self.batch_size,
+                collate_fn=collate_fn,
+                shuffle=True
+            )
 
             # train epoch
             log_train = self._run_epoch(dataloader, True)
@@ -51,6 +48,14 @@ class BasePredictor():
                 # You can set batch_size as `self.batch_size` here,
                 # and `collate_fn=collate_fn`.
                 # evaluate model
+
+                dataloader = Data.DataLoader(
+                    dataset=self.valid,
+                    batch_size=self.batch_size,
+                    collate_fn=collate_fn,
+                )
+                self.model.eval()
+
                 log_valid = self._run_epoch(dataloader, False)
             else:
                 log_valid = None
@@ -60,10 +65,7 @@ class BasePredictor():
 
             self.epoch += 1
 
-    def predict_dataset(self, data,
-                        collate_fn=default_collate,
-                        batch_size=None,
-                        predict_fn=None):
+    def predict_dataset(self, data, collate_fn, batch_size=None, predict_fn=None):
         if batch_size is None:
             batch_size = self.batch_size
         if predict_fn is None:
@@ -77,7 +79,12 @@ class BasePredictor():
         # You can set batch_size as `self.batch_size` here,
         # and `collate_fn=collate_fn`.
         # evaluate model
-        dataloader = None
+        dataloader = Data.DataLoader(
+            dataset=data,
+            batch_size=self.batch_size,
+            collate_fn=collate_fn,
+            shuffle=False
+        )
 
         ys_ = []
         with torch.no_grad():
@@ -98,7 +105,11 @@ class BasePredictor():
 
     def load(self, path):
         # TODO: Load saved model from path here.
-        pass
+        checkpoint = torch.load(path)
+        self.model.load_state_dict(checkpoint['model'])
+        self.optimizer.load_state_dict(checkpoint['optimizer'])
+        self.epoch = checkpoint['epoch']
+
 
     def _run_epoch(self, dataloader, training):
         # set model training/evaluation mode
@@ -114,6 +125,7 @@ class BasePredictor():
         if training:
             iter_in_epoch = min(len(dataloader), self.max_iters_in_epoch)
             description = 'training'
+
         else:
             iter_in_epoch = len(dataloader)
             description = 'evaluating'
@@ -127,36 +139,37 @@ class BasePredictor():
                 break
 
             if training:
-                output, batch_loss = \
-                    self._run_iter(batch, training)
+                output, batch_loss = self._run_iter(batch, training)
 
                 batch_loss /= self.grad_accumulate_steps
 
                 # accumulate gradient - zero_grad
                 if i % self.grad_accumulate_steps == 0:
                     # TODO: call zero gradient here
-                    pass
+                    self.optimizer.zero_grad()
 
                 # TODO: Call backward on `batch_loss` here.
+                batch_loss.backward()
 
                 # accumulate gradient - step
                 if (i + 1) % self.grad_accumulate_steps == 0:
                     # TODO: update gradient here
-                    pass
+                    self.optimizer.step()
+
             else:
                 with torch.no_grad():
-                    output, batch_loss = \
-                        self._run_iter(batch, training)
+                    output, batch_loss = self._run_iter(batch, training)
 
             # accumulate loss and metric scores
             loss += batch_loss.item()
+
             for metric in self.metrics:
                 metric.update(output, batch)
             trange.set_postfix(
                 loss=loss / (i + 1),
                 **{m.name: m.print_score() for m in self.metrics})
 
-        # calculate averate loss and metrics
+        # calculate average loss and metrics
         loss /= iter_in_epoch
 
         epoch_log = {}

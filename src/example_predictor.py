@@ -12,14 +12,11 @@ class ExamplePredictor(BasePredictor):
             information embedding.
     """
 
-    def __init__(self, embedding,
-                 dropout_rate=0.2, loss='BCELoss', margin=0, threshold=None,
+    def __init__(self, embedding, dropout_rate=0.2, loss='BCELoss', margin=0, threshold=None,
                  similarity='inner_product', **kwargs):
         super(ExamplePredictor, self).__init__(**kwargs)
-        self.model = ExampleNet(embedding.size(1),
-                                similarity=similarity)
-        self.embedding = torch.nn.Embedding(embedding.size(0),
-                                            embedding.size(1))
+        self.model = ExampleNet(embedding.size(1), similarity=similarity)
+        self.embedding = torch.nn.Embedding(embedding.size(0), embedding.size(1))
         self.embedding.weight = torch.nn.Parameter(embedding)
 
         # use cuda
@@ -27,8 +24,7 @@ class ExamplePredictor(BasePredictor):
         self.embedding = self.embedding.to(self.device)
 
         # make optimizer
-        self.optimizer = torch.optim.Adam(self.model.parameters(),
-                                          lr=self.learning_rate)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
         self.loss = {
             'BCELoss': torch.nn.BCEWithLogitsLoss()
@@ -43,7 +39,7 @@ class ExamplePredictor(BasePredictor):
             batch['context_lens'],
             options.to(self.device),
             batch['option_lens'])
-        loss = self.loss(logits, batch['labels'].float().to(self.device))
+        loss = self.loss(logits.to(self.device), batch['labels'].float().to(self.device))
         return logits, loss
 
     def _predict_batch(self, batch):

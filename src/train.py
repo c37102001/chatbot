@@ -11,7 +11,7 @@ from metrics import Recall
 
 
 def main(args):
-    config_path = os.path.join(args.model_dir, 'config.json')
+    config_path = os.path.join(args.model_dir, 'config.json')  #../models/example/
     with open(config_path) as f:
         config = json.load(f)
 
@@ -33,34 +33,24 @@ def main(args):
         PredictorClass = ExamplePredictor
 
     predictor = PredictorClass(
-        metrics=[Recall()],
+        metrics=[Recall(), Recall(1)],
         **config['model_parameters']
     )
 
     if args.load is not None:
         predictor.load(args.load)
 
-    model_checkpoint = ModelCheckpoint(
-        os.path.join(args.model_dir, 'model.pkl'),
-        'loss', 1, 'all'
-    )
-    metrics_logger = MetricsLogger(
-        os.path.join(args.model_dir, 'log.json')
-    )
+    model_checkpoint = ModelCheckpoint(os.path.join(args.model_dir, 'model.pkl'), 'loss', 1, 'all')
+    metrics_logger = MetricsLogger(os.path.join(args.model_dir, 'log.json'))
 
     logging.info('start training!')
-    predictor.fit_dataset(train,
-                          train.collate_fn,
-                          [model_checkpoint, metrics_logger])
+    predictor.fit_dataset(train, train.collate_fn, [model_checkpoint, metrics_logger])
 
 
 def _parse_args():
-    parser = argparse.ArgumentParser(
-        description="Script to train.")
-    parser.add_argument('model_dir', type=str,
-                        help='Directory to the model checkpoint.')
-    parser.add_argument('--device', default=None,
-                        help='Device used to train. Can be cpu or cuda:0,'
+    parser = argparse.ArgumentParser(description="Script to train.")
+    parser.add_argument('model_dir', type=str, help='Directory to the model checkpoint.')
+    parser.add_argument('--device', default=None, help='Device used to train. Can be cpu or cuda:0,'
                         ' cuda:1, etc.')
     parser.add_argument('--load', default=None, type=str)
     args = parser.parse_args()
