@@ -24,14 +24,14 @@ class ExampleNet(torch.nn.Module):
             input_size=hidden_size,
             hidden_size=hidden_size,
             num_layers=1,
-            # dropout=0.2,
             batch_first=True,
+            # dropout=0.2,
         )
 
         self.metrixW = torch.nn.Linear(hidden_size, hidden_size)
         self.attnMetrix = torch.nn.Linear(hidden_size, hidden_size)
         self.softmax = torch.nn.Softmax(dim=1)
-        self.attn_dropout = torch.nn.Dropout(0.1)
+        # self.attn_dropout = torch.nn.Dropout(0.1)
 
     def forward(self, context, context_lens, options, option_lens):
         context, (h_n, h_c) = self.rnn(context, None)  # (10, 23, 300) -> (10, 23, 128)
@@ -42,8 +42,8 @@ class ExampleNet(torch.nn.Module):
 
             option, (o_n, o_c) = self.rnn(option, None)     # (10, 50, 128)
             # option_last = option_out[:, -1, :]              # (10, 128)
-            drop_context = self.attn_dropout(context)
-            temp = self.attnMetrix(drop_context)              # (10, 23, 128)
+            # drop_context = self.attn_dropout(context)
+            temp = self.attnMetrix(context)              # (10, 23, 128)
             alphas = temp.bmm(option.transpose(1, 2))    # (10, 23, 128).bmm(10, 128, 50) = (10, 23, 50)
             alphas = self.softmax(alphas)                           # (10, 23, 50)
             alphas = alphas.transpose(1, 2)                         # (10, 50, 23)
