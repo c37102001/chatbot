@@ -1,12 +1,11 @@
 import torch
 import torch.utils.data as Data
 from tqdm import tqdm
-import pdb
 
 
 class BasePredictor():
-    def __init__(self, batch_size=10, max_epochs=10, valid=None, device=None, metrics={},
-                 learning_rate=5e-3, max_iters_in_epoch=1e20, grad_accumulate_steps=1):
+    def __init__(self, batch_size=32, max_epochs=10, valid=None, device=None, metrics={},
+                 learning_rate=5e-4, max_iters_in_epoch=1e20, grad_accumulate_steps=1):
         self.batch_size = batch_size
         self.max_epochs = max_epochs
         self.valid = valid
@@ -110,7 +109,6 @@ class BasePredictor():
         self.optimizer.load_state_dict(checkpoint['optimizer'])
         self.epoch = checkpoint['epoch']
 
-
     def _run_epoch(self, dataloader, training):
         # set model training/evaluation mode
         self.model.train(training)
@@ -204,3 +202,4 @@ class BasePredictor():
             predicts: Prediction of the batch.
         """
         pass
+

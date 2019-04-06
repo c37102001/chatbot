@@ -51,6 +51,11 @@ class Preprocessor:
                 [option['utterance'] for option in sample['options-for-next']]
             )
         utterances = list(set(utterances))
+
+        # with open('../data/mytext.txt', 'a') as f:
+        #     for s in utterances:
+        #         f.write(s + ' ')
+
         chunks = [
             ' '.join(utterances[i:i + len(utterances) // n_workers])
             for i in range(0, len(utterances), len(utterances) // n_workers)

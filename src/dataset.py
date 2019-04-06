@@ -29,6 +29,7 @@ class DialogDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, index):
+
         data = dict(self.data[index])
         positives = data['options'][:data['n_corrects']]   # 1
         negatives = data['options'][data['n_corrects']:]   # 99
@@ -62,6 +63,7 @@ class DialogDataset(Dataset):
 
         # use the last one utterance
         # data['context'] = data['context'][-1]
+
         concat_context = []
         for context in data['context']:
             concat_context += context
@@ -73,6 +75,7 @@ class DialogDataset(Dataset):
         return data
 
     def collate_fn(self, datas):
+
         batch = {}
 
         # collate lists
@@ -83,7 +86,9 @@ class DialogDataset(Dataset):
 
         # build tensor of context
         batch['context_lens'] = [len(data['context']) for data in datas]
+
         padded_len = min(self.context_padded_len, max(batch['context_lens']))
+
         batch['context'] = torch.tensor(
             [pad_to_len(data['context'], padded_len, self.padding)
              for data in datas]

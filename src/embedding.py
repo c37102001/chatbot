@@ -73,6 +73,7 @@ class Embedding:
 
     def extend(self, embedding_path, words, oov_as_unk=True):
         self._load_embedding(embedding_path, words)
+        # self._load_embedding(oov_embedding_path, words)
 
         if words is not None and not oov_as_unk:
             # initialize word vector for OOV

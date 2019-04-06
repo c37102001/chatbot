@@ -54,8 +54,8 @@ def main(args):
 
     # train
     logging.info('Processing train from {}'.format(config['train_json_path']))
-    train = preprocessor.get_dataset(config['train_json_path'], args.n_workers)  #load json data
-    train_pkl_path = os.path.join(args.dest_dir, 'train.pkl')                     #save into pkl
+    train = preprocessor.get_dataset(config['train_json_path'], args.n_workers)  # load json data
+    train_pkl_path = os.path.join(args.dest_dir, 'train.pkl')                    # save into pkl
     logging.info('Saving train to {}'.format(train_pkl_path))
     with open(train_pkl_path, 'wb') as f:
         pickle.dump(train, f)

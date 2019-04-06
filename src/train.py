@@ -32,6 +32,16 @@ def main(args):
         from example_predictor import ExamplePredictor
         PredictorClass = ExamplePredictor
 
+    if config['arch'] == 'RnnNet':
+        from rnn_predictor import RnnPredictor
+        PredictorClass = RnnPredictor
+    elif config['arch'] == 'AttentionNet':
+        from attention_predictor import AttentionPredictor
+        PredictorClass = AttentionPredictor
+    elif config['arch'] == 'BestNet':
+        from best_predictor import BestPredictor
+        PredictorClass = BestPredictor
+
     predictor = PredictorClass(
         metrics=[Recall(), Recall(1)],
         **config['model_parameters']

@@ -1,21 +1,7 @@
 import torch
 
 
-# def weight_init(m):
-#     '''
-#     Usage:
-#         model = Model()
-#         model.apply(weight_init)
-#     '''
-#
-#     if isinstance(m, torch.nn.LSTM):
-#         for param in m.parameters():
-#             if len(param.shape) >= 2:
-#                 torch.nn.init.orthogonal_(param.data)
-#             else:
-#                 torch.nn.init.normal_(param.data)
-
-class ExampleNet(torch.nn.Module):
+class BestNet(torch.nn.Module):
     """
 
     Args:
@@ -23,8 +9,7 @@ class ExampleNet(torch.nn.Module):
     """
 
     def __init__(self, dim_embeddings, hidden_size=128, similarity='inner_product'):
-        super(ExampleNet, self).__init__()
-
+        super(BestNet, self).__init__()
         self.hidden_size = hidden_size
 
         self.rnn = torch.nn.LSTM(
@@ -44,35 +29,24 @@ class ExampleNet(torch.nn.Module):
         )
 
         self.metrixW = torch.nn.Linear(hidden_size*2, hidden_size*2)
-
         self.linear = torch.nn.Linear(hidden_size*8, hidden_size)
-        # change attnMetrix to inner product
-        # self.attnMetrix = torch.nn.Linear(hidden_size*2, hidden_size*2)
 
         self.softmax = torch.nn.Softmax(dim=1)
         self.dropout = torch.nn.Dropout(0.4)
 
-        # self.apply(weight_init)
-
     def forward(self, context, context_lens, options, option_lens):
 
-        # self.init_weights()
         batch_size = context.size(0)
         hidden_size = self.hidden_size
 
         context, (h_n, h_c) = self.rnn(context, None)  # (32, 50, 300) -> (32, 50, 128*2)
         context = self.dropout(context)
-        context_last = context[:, -1, :]               # (10, 128)
 
         logits = []
         for i, option in enumerate(options.transpose(1, 0)):    # options: (10, 5, 50, 300) -> (5, 10, 50, 300)
 
-            option, (o_n, o_c) = self.rnn(option, None)     # (32, 300, 128*2)
+            option, (o_n, o_c) = self.rnn(option, None)         # (32, 300, 128*2)
             option = self.dropout(option)
-            option_last = option[:, -1, :]              # (10, 128)
-
-            # temp = self.attnMetrix(context)              # (10, 23, 128)
-            # alphas = temp.bmm(option.transpose(1, 2))    # (10, 23, 128).bmm(10, 128, 50) = (10, 23, 50)
 
             alphas = context.bmm(option.transpose(1, 2))            # (50,256)x(256,300) = (b, 50, 300)
             alphas = self.softmax(alphas)                           # (b, 50, 300)
@@ -93,17 +67,17 @@ class ExampleNet(torch.nn.Module):
 
             context_interact = torch.cat((context, new_option, context*new_option, context-new_option), 2)
             # (b, 50, 128*2*4)
-            context_interact = self.linear(context_interact.view(-1, hidden_size*8))  # (b*23, 128)
-            context_interact = context_interact.view(batch_size, -1, hidden_size)   # (b, 23, 128)
+            context_interact = self.linear(context_interact.view(-1, hidden_size*8))  # (b*50, 128)
+            context_interact = context_interact.view(batch_size, -1, hidden_size)   # (b, 50, 128)
 
-            attn_option, _ = self.attn_rnn(option_interact)  # (b, 300, 128) -> (b, 200, 128*2)
+            attn_option, _ = self.attn_rnn(option_interact)  # (b, 300, 128) -> (b, 300, 128*2)
             option_last = attn_option.max(1)[0]  # (b, 128*2)
 
             attn_context, _ = self.attn_rnn(context_interact)
             context_last = attn_context.max(1)[0]  # (b, 128*2)
 
             c_out = self.metrixW(context_last).unsqueeze(1)   # c_out(b, 128*2) -> (b, 1, 128*2)
-            o_out = option_last.unsqueeze(2)  # (10, 128, 1)
+            o_out = option_last.unsqueeze(2)  # (10, 128*2, 1)
             logit = c_out.bmm(o_out).squeeze(2).squeeze(1)   # (10, 1, 1) -> (10)
 
             logits.append(logit)       # -> (5, 10)

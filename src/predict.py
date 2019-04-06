@@ -22,9 +22,19 @@ def main(args):
         config['model_parameters']['embedding'] = embedding.vectors
 
     # make model
-    if config['arch'] == 'ExampleNet':
-        from example_predictor import ExamplePredictor
-        PredictorClass = ExamplePredictor
+    # if config['arch'] == 'ExampleNet':
+    #     from example_predictor import ExamplePredictor
+    #     PredictorClass = ExamplePredictor
+
+    if config['arch'] == 'RnnNet':
+        from rnn_predictor import RnnPredictor
+        PredictorClass = RnnPredictor
+    elif config['arch'] == 'AttentionNet':
+        from attention_predictor import AttentionPredictor
+        PredictorClass = AttentionPredictor
+    elif config['arch'] == 'BestNet':
+        from best_predictor import BestPredictor
+        PredictorClass = BestPredictor
 
     predictor = PredictorClass(metrics=[],
                                **config['model_parameters'])
@@ -42,8 +52,10 @@ def main(args):
     logging.info('predicting...')
     predicts = predictor.predict_dataset(test, test.collate_fn)
 
-    output_path = os.path.join(args.model_dir,
-                               'predict-{}.csv'.format(args.epoch))
+    if args.output_dir is not None:
+        output_path = os.path.join(args.output_dir)
+    else:
+        output_path = os.path.join(args.model_dir, 'predict-{}.csv'.format(args.epoch))
     write_predict_csv(predicts, test, output_path)
 
 
@@ -86,6 +98,8 @@ def _parse_args():
         description="Script to train.")
     parser.add_argument('model_dir', type=str,
                         help='Directory to the model checkpoint.')
+    parser.add_argument('--output_dir', type=str, default=None,
+                        help='Path to the output predictions.')
     parser.add_argument('--device', default=None,
                         help='Device used to train. Can be cpu or cuda:0,'
                         ' cuda:1, etc.')
